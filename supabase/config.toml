@@ -20,21 +20,18 @@ port = 54323
 enabled = true
 
 [auth.email]
-smtp_admin_email = "admin@example.com"
-smtp_host = "localhost"
-smtp_pass = "password"
-smtp_port = 2500
-smtp_sender_name = "Admin"
-smtp_user = "admin"
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+
+[auth.email.smtp]
+host = "localhost"
+port = 2500
+user = "admin"
+pass = "password"
+admin_email = "admin@example.com"
+sender_name = "Admin"
 
 [auth.sms]
-enabled = false
-
-[functions]
-enabled = true
-
-[storage]
-enabled = true
-
-[realtime]
-enabled = true
+enable_signup = false
+enable_confirmations = false
