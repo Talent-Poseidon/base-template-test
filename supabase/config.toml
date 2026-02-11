@@ -1,5 +1,5 @@
 # A config.toml file is required to run Supabase CLI commands locally
-# See https://supabase.com/docs/guides/local-development
+project_id = "test-project"
 
 [api]
 enabled = true
@@ -22,7 +22,6 @@ max_client_conn = 100
 
 [realtime]
 enabled = true
-port = 54324
 
 [studio]
 enabled = true
@@ -37,15 +36,15 @@ enabled = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://localhost:3000"]
 jwt_expiry = 3600
-enable_signup = true
 
 [auth.email]
 enabled = true
-smtp_host = "localhost"
-smtp_port = "54325"
-smtp_user = "api"
-smtp_pass = "api"
 smtp_admin_email = "admin@example.com"
+smtp_host = "localhost"
+smtp_port = 2500
+smtp_user = "fake_mail_user"
+smtp_pass = "fake_mail_password"
+smtp_sender_name = "Admin"
 
 [auth.sms]
 enabled = false
@@ -54,8 +53,6 @@ enabled = false
 enabled = false
 port = 54327
 vector_port = 54328
-gcp_project_id = ""
-region = "us-east-1"
 
 [edge_runtime]
 enabled = true
@@ -63,9 +60,6 @@ inspector_port = 8083
 
 [functions]
 enabled = true
-verify_jwt = true
-import_map = "./functions/import_map.json"
 
-[functions.hello]
-enabled = false
-verify_jwt = true
+[local]
+enabled = true
