@@ -1,21 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Shield, Users, Zap } from "lucide-react";
 
 export default async function HomePage() {
-  console.log("[v0] HomePage rendering, checking Supabase connection...");
-  let user = null;
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase.auth.getUser();
-    user = data.user;
-    console.log("[v0] Supabase getUser result:", user ? "authenticated" : "no user");
-  } catch (err) {
-    console.log("[v0] Supabase error on homepage:", err);
-  }
+  const session = await auth();
 
-  if (user) {
+  if (session?.user) {
     redirect("/dashboard");
   }
 
@@ -52,7 +43,7 @@ export default async function HomePage() {
         <div className="max-w-2xl text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
             <Zap className="h-3 w-3 text-primary" />
-            Next.js + Supabase + Mantine Boilerplate
+            Next.js + NextAuth + Prisma Boilerplate
           </div>
           <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Fullstack starter template with authentication
@@ -60,7 +51,7 @@ export default async function HomePage() {
           <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
             A production-ready boilerplate with email and Google OAuth authentication,
             admin approval workflow, dashboard, and profile management. Built with
-            Next.js, Supabase, Tailwind CSS, and Mantine UI.
+            Next.js, NextAuth (Auth.js), Prisma, Tailwind CSS, and Mantine UI.
           </p>
           <div className="mt-8 flex items-center justify-center gap-4">
             <Link
@@ -95,19 +86,19 @@ export default async function HomePage() {
                 icon: Shield,
                 title: "Full Authentication",
                 description:
-                  "Email/password and Google OAuth with Supabase Auth. Includes sign-in, sign-up, and session management.",
+                  "Email/password and Google OAuth with NextAuth. Includes sign-in, sign-up, and session management.",
               },
               {
                 icon: Users,
                 title: "Admin Approval",
                 description:
-                  "New Google sign-in users require admin approval. Admin panel to manage and approve user accounts.",
+                  "New users require admin approval. Admin panel to manage and approve user accounts.",
               },
               {
                 icon: Zap,
                 title: "Production Ready",
                 description:
-                  "RLS policies, env utility, middleware protection, Mantine + Tailwind styling, and clean code structure.",
+                  "Prisma ORM, env utility, middleware protection, Mantine + Tailwind styling, and clean code structure.",
               },
             ].map((feature) => (
               <div
@@ -130,7 +121,7 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="border-t border-border bg-card px-4 py-6">
         <p className="text-center text-xs text-muted-foreground">
-          Next.js Fullstack Boilerplate. Built with Supabase, Tailwind CSS, and Mantine UI.
+          Next.js Fullstack Boilerplate. Built with NextAuth, Prisma, Tailwind CSS, and Mantine UI.
         </p>
       </footer>
     </main>

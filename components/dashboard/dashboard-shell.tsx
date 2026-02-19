@@ -2,7 +2,6 @@
 
 import React from "react"
 
-import type { User } from "@supabase/supabase-js";
 import { Avatar, Menu, UnstyledButton } from "@mantine/core";
 import {
   LayoutDashboard,
@@ -13,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "@/lib/auth/actions";
+import { signOutAction } from "@/lib/auth/actions"; // Use Server Action wrapper
 
 interface Profile {
   id: string;
@@ -25,7 +24,7 @@ interface Profile {
 }
 
 interface DashboardShellProps {
-  user: User;
+  user: any; // NextAuth User type
   profile: Profile;
   children: React.ReactNode;
 }
@@ -128,7 +127,7 @@ export function DashboardShell({ user, profile, children }: DashboardShellProps)
                 </Menu.Item>
               )}
               <Menu.Divider />
-              <form action={signOut}>
+              <form action={signOutAction}>
                 <Menu.Item
                   color="red"
                   type="submit"

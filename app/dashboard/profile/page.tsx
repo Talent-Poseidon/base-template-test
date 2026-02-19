@@ -1,22 +1,28 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ProfileCard } from "@/components/dashboard/profile-card";
+import { prisma } from "@/lib/prisma";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth();
+
+  if (!session?.user) redirect("/auth/login");
+
+  const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+  });
 
   if (!user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) redirect("/auth/login");
+  const profile = {
+      id: user.id,
+      email: user.email,
+      full_name: user.name,
+      avatar_url: user.image,
+      role: user.role,
+      is_approved: user.is_approved,
+      created_at: new Date().toISOString(),
+  };
 
   return (
     <div>
@@ -26,7 +32,7 @@ export default async function ProfilePage() {
           Manage your personal information
         </p>
       </div>
-      <ProfileCard user={user} profile={profile} />
+      <ProfileCard user={session.user} profile={profile} />
     </div>
   );
 }

@@ -41,9 +41,9 @@ export function SignUpForm() {
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <CheckCircle2 className="h-6 w-6 text-primary" />
         </div>
-        <h2 className="text-lg font-semibold text-foreground">Check your email</h2>
+        <h2 className="text-lg font-semibold text-foreground">Account Created</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          We sent you a confirmation link. After confirming, your account will be reviewed by an admin before you can sign in.
+          Your account has been created successfully. Please wait for an admin to approve your account before you can sign in.
         </p>
         <Link
           href="/auth/login"

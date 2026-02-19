@@ -1,76 +1,89 @@
-# Supabase + Next.js Boilerplate
+# Next.js 16 + NextAuth + Prisma Boilerplate
 
-A production-ready full-stack boilerplate featuring Next.js 14 (App Router), Supabase (Auth, DB, RLS), and Mantine UI.
+A modern, production-ready full-stack boilerplate featuring Next.js 16 (App Router), NextAuth.js v5 (Auth), Prisma ORM (Database), and a hybrid UI system (Shadcn UI + Mantine).
 
 ## Features
 
-- **Authentication:** Email/Password & Google OAuth.
-- **Authorization:** Role-based access (User vs Admin) & Row Level Security (RLS).
+- **Authentication:** NextAuth.js v5 (Email/Password & Google OAuth).
+- **Database:** Prisma ORM with PostgreSQL.
+- **Authorization:** Role-based access (User vs Admin) & Account Approval System.
 - **Admin Dashboard:** Manage users and approvals.
-- **Modern Stack:** Next.js 14, TypeScript, Mantine UI v7, Tailwind CSS.
+- **Modern Stack:** Next.js 16, TypeScript, Shadcn UI, Mantine UI v7, Tailwind CSS.
 
 ## Getting Started
 
 ### 1. Prerequisites
-- Node.js 18+
-- PNPM (`npm install -g pnpm`)
+- Node.js 20+ (Recommended)
+- PNPM (Recommended) or NPM
 
-### 2. Setup Supabase Project
-1. Go to [Supabase Dashboard](https://supabase.com/dashboard) and create a new project.
-2. Go to **Project Settings > API**.
-3. Copy the **Project URL** and **anon public** key.
-
-### 3. Configure Environment Variables
+### 2. Configure Environment Variables
 Copy the example file and fill in your keys:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Open `.env.local` and fill in the details:
+Open `.env` and fill in the details:
 
 ```env
-# From Supabase Dashboard > Project Settings > API
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# Database Connection (PostgreSQL)
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb?schema=public"
 
-# REQUIRED only for running the admin setup script (DO NOT expose to client)
-# From Supabase Dashboard > Project Settings > API > service_role key
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# NextAuth Configuration
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-at-least-32-chars" # Generate with: openssl rand -base64 32
 
-# Your app URL (http://localhost:3000 for dev)
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+# OAuth Providers (Optional)
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
 ```
 
-### 4. Initialize Database
-1. Go to **Supabase Dashboard > SQL Editor**.
-2. Open the file `database/schema.sql` from this repository.
-3. Copy the entire content and paste it into the Supabase SQL Editor.
-4. Click **Run**.
-   *This will create the profiles table, triggers, and secure RLS policies.*
-
-### 5. Create Admin Account
-Instead of manually editing the database, use the included script to create your first admin user:
+### 3. Initialize Database
+Install dependencies and run Prisma migrations to set up your database schema.
 
 ```bash
+# Install dependencies
+pnpm install
+
+# Generate Prisma Client
+pnpm prisma generate
+
+# Push schema to database (for development)
+pnpm prisma db push
+# OR create a migration
+# pnpm prisma migrate dev --name init
+```
+
+### 4. Create Admin Account
+Since new sign-ups are unapproved by default, use the included script to create your first admin user. This script connects directly to your database via Prisma.
+
+```bash
+# Ensure your database is running and schema is pushed before running this
 npm run setup:admin
 # or
 pnpm setup:admin
 ```
 
 Follow the prompts to enter email and password. This will:
-- Create the user in Supabase Auth.
+- Create the user in the database (or update existing one).
 - Automatically promote them to `admin`.
 - Approve their account.
 
-### 6. Run the App
+### 5. Run the App
 
 ```bash
 pnpm dev
 ```
 
-Visit `http://localhost:3000` and login with your new admin account.
+Visit `http://localhost:3000`. You can login with the admin account you created.
 
 ## Documentation
 
 For detailed architecture and folder structure, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## CI/CD
+
+This project includes a GitHub Actions workflow (`.github/workflows/ci.yml`) that:
+- Lints the code.
+- Checks types.
+- Builds the application.

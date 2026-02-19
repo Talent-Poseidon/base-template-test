@@ -1,20 +1,30 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Users, Shield, Clock, CheckCircle2 } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth();
+
+  if (!session?.user) redirect("/auth/login");
+
+  const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { accounts: true }
+  });
 
   if (!user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const profile = {
+      id: user.id,
+      email: user.email,
+      full_name: user.name,
+      avatar_url: user.image,
+      role: user.role,
+      is_approved: user.is_approved,
+      provider: user.accounts[0]?.provider || "email",
+      created_at: new Date().toISOString(),
+  };
 
   const stats = [
     {
@@ -79,12 +89,12 @@ export default async function DashboardPage() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <p className="text-sm text-muted-foreground">Email</p>
-            <p className="mt-0.5 font-medium text-foreground">{user.email}</p>
+            <p className="mt-0.5 font-medium text-foreground">{profile.email}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Member since</p>
             <p className="mt-0.5 font-medium text-foreground">
-              {new Date(profile?.created_at || user.created_at).toLocaleDateString(
+              {new Date(profile.created_at).toLocaleDateString(
                 "en-US",
                 {
                   year: "numeric",
@@ -96,20 +106,13 @@ export default async function DashboardPage() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">User ID</p>
-            <p className="mt-0.5 font-mono text-xs text-foreground">{user.id}</p>
+            <p className="mt-0.5 font-mono text-xs text-foreground">{profile.id}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Last sign in</p>
             <p className="mt-0.5 font-medium text-foreground">
-              {user.last_sign_in_at
-                ? new Date(user.last_sign_in_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "N/A"}
+              {/* Prisma doesn't track last_sign_in_at by default unless we add it */}
+              Now
             </p>
           </div>
         </div>

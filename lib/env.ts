@@ -13,14 +13,6 @@ function getEnvVar(key: string, fallback?: string): string {
 }
 
 export const env = {
-  supabase: {
-    get url() {
-      return getEnvVar("NEXT_PUBLIC_SUPABASE_URL");
-    },
-    get anonKey() {
-      return getEnvVar("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-    },
-  },
   app: {
     get url() {
       return getEnvVar("NEXT_PUBLIC_APP_URL", "http://localhost:3000");

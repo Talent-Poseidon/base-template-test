@@ -2,66 +2,85 @@
 
 ## Overview
 
-This project is a full-stack Next.js application integrated with Supabase for authentication and database management. It uses the Next.js App Router for routing and Mantine UI for styling.
+This project is a modern full-stack web application built with **Next.js 16**, **NextAuth.js (v5)** for authentication, **Prisma ORM** for database management, and a hybrid UI system using **Shadcn UI** and **Mantine**.
 
 ## Tech Stack
 
-- **Framework:** Next.js 14 (App Router)
-- **Database & Auth:** Supabase
+- **Framework:** Next.js 16 (App Router)
+- **Authentication:** NextAuth.js v5 (Beta)
+- **Database:** PostgreSQL (via Prisma ORM)
 - **Language:** TypeScript
-- **Styling:** Mantine UI (v7) + Tailwind CSS
-- **Package Manager:** PNPM
+- **Styling:** Tailwind CSS, Shadcn UI (Radix Primitives), Mantine Core v7
+- **Package Manager:** PNPM (recommended)
 
 ## Folder Structure
 
 ```
+├── .github/              # CI/CD workflows
 ├── app/                  # Next.js App Router directory
-│   ├── (public)/         # Public routes (landing page, etc.)
-│   ├── admin/            # Admin dashboard (protected)
-│   ├── api/              # API Routes (health checks, etc.)
-│   ├── auth/             # Authentication pages (login, callback, error)
+│   ├── (public)/         # Public routes
+│   ├── admin/            # Admin dashboard (protected, role-based)
+│   ├── api/              # API Routes
+│   │   └── auth/         # NextAuth endpoints
+│   ├── auth/             # Auth pages (login, signup, error)
 │   ├── dashboard/        # User dashboard (protected)
-│   ├── layout.tsx        # Root layout (providers, global styles)
-│   └── page.tsx          # Home page
-├── components/           # Reusable React components
+│   ├── globals.css       # Global styles (Tailwind directives)
+│   ├── layout.tsx        # Root layout (Providers: Theme, Auth, Toast)
+│   └── page.tsx          # Landing page
+├── components/           # React components
 │   ├── admin/            # Admin-specific components
-│   ├── auth/             # Auth forms (login, signup)
-│   └── dashboard/        # Dashboard layout components
-├── lib/                  # Utility functions and configurations
-│   ├── auth/             # Auth actions (Server Actions)
-│   └── supabase/         # Supabase client configurations
-├── database/             # SQL scripts for database setup
+│   ├── auth/             # Auth forms
+│   ├── dashboard/        # Dashboard components
+│   ├── icons/            # Icon components
+│   ├── providers/        # Context providers (Mantine, Theme)
+│   └── ui/               # Shadcn UI reusable components (Button, Input, etc.)
+├── database/             # Legacy SQL scripts (Supabase) - Reference only
+├── hooks/                # Custom React hooks
+├── lib/                  # Utility libraries
+│   ├── auth/             # Auth actions & configuration
+│   ├── prisma.ts         # Prisma client singleton
+│   └── utils.ts          # CN utility for Tailwind
+├── prisma/               # Database schema & migrations
+│   ├── migrations/       # SQL migration history
+│   └── schema.prisma     # Data model definition
+├── public/               # Static assets
 └── scripts/              # Utility scripts (e.g., admin setup)
 ```
 
 ## Data Flow & Architecture
 
-### 1. Authentication Flow
-- **Middleware (`middleware.ts`):** Intercepts every request to refresh the Supabase session and protect routes.
-  - Redirects unauthenticated users from `/dashboard` or `/admin` to `/auth/login`.
-  - Redirects authenticated users from auth pages to `/dashboard`.
-- **Auth Actions (`lib/auth/actions.ts`):** Server Actions that handle Sign In, Sign Up, and Sign Out using the Supabase SDK.
-- **Callback (`app/auth/callback/route.ts`):** Handles OAuth redirects and email confirmations. It also checks if the user's profile exists and is approved.
+### 1. Authentication (NextAuth v5)
+- **Configuration:** Defined in `auth.ts` and `auth.config.ts`.
+- **Strategies:**
+  - **Credentials:** Email/Password login (hashed with bcryptjs).
+  - **OAuth:** Google (configured, extensible to others).
+- **Session:** Stateless JWT sessions managed by NextAuth.
+- **Middleware:** `middleware.ts` protects routes (`/dashboard`, `/admin`) and handles redirects based on auth status.
 
-### 2. Database Schema (Supabase)
-The application relies on two main concepts for user data:
-- **`auth.users`:** Managed internally by Supabase. Stores email, encrypted password, and session data.
-- **`public.profiles`:** Custom table linked to `auth.users` via `id`. Stores application-specific data like `full_name`, `role` (user/admin), and `is_approved`.
+### 2. Database (Prisma + PostgreSQL)
+- **ORM:** Prisma acts as the bridge between the application and the PostgreSQL database.
+- **Schema:** Defined in `prisma/schema.prisma`.
+  - **User:** Stores profile info, password hash, role (`user` | `admin`), and approval status.
+  - **Account/Session:** Support tables for NextAuth.
+- **Client:** A singleton instance is exported from `lib/prisma.ts` to prevent connection exhaustion in serverless environments.
 
-**Key Triggers:**
-- A database trigger (`handle_new_user`) automatically creates a row in `public.profiles` whenever a new user is created in `auth.users`.
+### 3. Authorization & Security
+- **Role-Based Access Control (RBAC):**
+  - Users have a `role` field ("user" or "admin").
+  - `admin` routes are protected in `middleware.ts` or via server-side checks.
+- **Approval System:**
+  - Users have an `is_approved` boolean field.
+  - Unapproved users are redirected to a "Pending Approval" page even if authenticated.
 
-### 3. Security (RLS)
-Row Level Security (RLS) is enabled on `public.profiles` to ensure data privacy:
-- **Users:** Can only view and edit their own profile.
-- **Admins:** Can view and edit all profiles (managed via a special `is_admin()` security definer function to prevent recursion).
+### 4. Styling System
+- **Tailwind CSS:** Primary utility-first CSS framework.
+- **Shadcn UI:** Provides accessible, unstyled components (based on Radix UI) customized via Tailwind. Located in `components/ui`.
+- **Mantine:** Used for specific complex components or legacy support.
+- **Theming:** `components/providers/theme-provider.tsx` handles dark/light mode.
 
-### 4. Admin System
-- **Role-based Access:** The `public.profiles` table has a `role` column.
-- **Approval System:** Users can be marked as `is_approved` (boolean). Unapproved users are redirected to a "Pending Approval" page even if they have a valid session.
-- **Admin Dashboard:** Located at `/admin`, allows admins to approve/reject users.
+## Key Workflows
 
-## Styling System
-- **Mantine UI:** Used for complex components (Inputs, Buttons, Modals, Tables).
-- **Tailwind CSS:** Used for layout and spacing utility classes.
-- **Theme:** Configured in `components/providers/mantine-provider.tsx`.
+### Admin Setup
+A script is provided to bootstrap the first admin user since registration defaults to `role: "user"` and `is_approved: false`.
+- **Script:** `scripts/setup-admin.ts`
+- **Execution:** `npm run setup:admin` (creates user via Prisma directly).

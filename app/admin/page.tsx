@@ -1,28 +1,37 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { AdminUserTable } from "@/components/admin/admin-user-table";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth();
 
-  if (!user) redirect("/auth/login");
+  if (!session?.user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  // Double check role from DB to be safe
+  const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+  });
 
-  if (!profile || profile.role !== "admin") redirect("/dashboard");
+  if (!user || user.role !== "admin") redirect("/dashboard");
 
-  // Fetch all users (admin can see all via RLS policy)
-  const { data: users } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
+  // Fetch all users
+  const users = await prisma.user.findMany({
+      orderBy: { id: 'desc' }, // created_at not in schema, use id or add created_at
+      include: { accounts: true }, // to check provider
+  });
+
+  // Map to format expected by table
+  const formattedUsers = users.map(u => ({
+      id: u.id,
+      email: u.email,
+      full_name: u.name,
+      avatar_url: u.image,
+      role: u.role,
+      is_approved: u.is_approved,
+      provider: u.accounts[0]?.provider || "email",
+      created_at: new Date().toISOString(), // Schema doesnt have created_at yet
+  }));
 
   return (
     <div>
@@ -32,7 +41,7 @@ export default async function AdminPage() {
           Approve or manage user accounts. Users who sign in with Google need approval before they can access the app.
         </p>
       </div>
-      <AdminUserTable users={users || []} currentUserId={user.id} />
+      <AdminUserTable users={formattedUsers} currentUserId={user.id} />
     </div>
   );
 }

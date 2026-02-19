@@ -1,31 +1,31 @@
 import { Clock } from "lucide-react";
-import Link from "next/link";
+import { signOut } from "@/auth";
 
 export default function PendingApprovalPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted px-4 py-12">
-      <div className="w-full max-w-md text-center">
-        <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full" style={{ backgroundColor: "hsl(var(--warning) / 0.1)" }}>
-            <Clock className="h-7 w-7" style={{ color: "hsl(var(--warning))" }} />
-          </div>
-          <h1 className="text-xl font-bold text-foreground">
-            Account Pending Approval
-          </h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            Your account has been created successfully, but it needs to be
-            approved by an administrator before you can access the application.
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            You will be able to sign in once your account has been approved.
-          </p>
-          <Link
-            href="/auth/login"
-            className="mt-6 inline-block rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
+          <Clock className="h-6 w-6 text-yellow-600" />
+        </div>
+        <h2 className="text-lg font-semibold text-foreground">Account Pending Approval</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Your account is currently pending approval from an administrator. 
+          You will be able to sign in once your account has been approved.
+        </p>
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/auth/login" });
+          }}
+        >
+          <button 
+            type="submit"
+            className="mt-6 inline-block text-sm font-medium text-primary hover:underline bg-transparent border-none cursor-pointer p-0"
           >
             Back to sign in
-          </Link>
-        </div>
+          </button>
+        </form>
       </div>
     </main>
   );

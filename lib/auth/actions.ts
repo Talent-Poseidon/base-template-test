@@ -1,101 +1,67 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { signIn, signOut } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { AuthError } from "next-auth";
 
 export async function signInWithEmail(formData: FormData) {
-  const supabase = await createClient();
-
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  // Check if user is approved
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_approved")
-      .eq("id", user.id)
-      .single();
-
-    if (profile && !profile.is_approved) {
-      await supabase.auth.signOut();
-      return {
-        error:
-          "Your account is pending approval. Please wait for an admin to approve your access.",
-      };
+  try {
+    await signIn("credentials", {
+      email: formData.get("email"),
+      password: formData.get("password"),
+      redirectTo: "/dashboard",
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return { error: "Invalid credentials or account not approved." };
+        default:
+          return { error: "Something went wrong." };
+      }
     }
+    throw error;
   }
-
-  redirect("/dashboard");
 }
 
 export async function signUpWithEmail(formData: FormData) {
-  const supabase = await createClient();
-
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const fullName = formData.get("full_name") as string;
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo:
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
-      data: {
-        full_name: fullName,
-      },
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
+  if (!email || !password) {
+      return { error: "Missing fields" };
   }
 
-  return { success: true };
+  try {
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+          return { error: "User already exists." };
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      await prisma.user.create({
+          data: {
+              email,
+              password: hashedPassword,
+              name: fullName,
+              is_approved: false, // Default pending approval
+          },
+      });
+
+      return { success: true };
+  } catch (error) {
+      console.error("Signup error:", error);
+      return { error: "Failed to create account." };
+  }
 }
 
 export async function signInWithGoogle() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo:
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
-      queryParams: {
-        access_type: "offline",
-        prompt: "consent",
-      },
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  if (data.url) {
-    redirect(data.url);
-  }
+  await signIn("google", { redirectTo: "/dashboard" });
 }
 
-export async function signOut() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/auth/login");
+export async function signOutAction() {
+  await signOut({ redirectTo: "/auth/login" });
 }

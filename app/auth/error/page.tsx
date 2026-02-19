@@ -1,5 +1,5 @@
 import { AlertCircle } from "lucide-react";
-import { signOut } from "@/lib/auth/actions";
+import { signOutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 
 export default async function AuthErrorPage({
@@ -52,7 +52,7 @@ export default async function AuthErrorPage({
             </p>
           )}
 
-          <form action={signOut} className="mt-6">
+          <form action={signOutAction} className="mt-6">
              <Button
               type="submit"
               className="inline-flex w-full items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"

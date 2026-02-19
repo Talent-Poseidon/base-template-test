@@ -1,34 +1,40 @@
 import React from "react"
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth();
 
-  if (!user) {
+  if (!session?.user) {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+  });
 
-  if (!profile || profile.role !== "admin") {
+  if (!user || user.role !== "admin") {
     redirect("/dashboard");
   }
 
+  // Adapter for DashboardShell
+  const profile = {
+      id: user.id,
+      email: user.email,
+      full_name: user.name,
+      avatar_url: user.image,
+      role: user.role,
+      is_approved: user.is_approved,
+  };
+
   return (
-    <DashboardShell user={user} profile={profile}>
+    <DashboardShell user={session.user} profile={profile}>
       {children}
     </DashboardShell>
   );

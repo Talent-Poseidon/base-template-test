@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Avatar, Badge, Button, TextInput } from "@mantine/core";
 import { Search, CheckCircle2, XCircle, Shield, ShieldOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { approveUser, revokeUser, toggleUserRole } from "@/lib/admin/actions";
 
 interface Profile {
   id: string;
@@ -37,35 +37,19 @@ export function AdminUserTable({ users, currentUserId }: AdminUserTableProps) {
 
   async function handleApprove(userId: string) {
     setLoadingId(userId);
-    const supabase = createClient();
-    await supabase
-      .from("profiles")
-      .update({ is_approved: true, updated_at: new Date().toISOString() })
-      .eq("id", userId);
-    router.refresh();
+    await approveUser(userId);
     setLoadingId(null);
   }
 
   async function handleRevoke(userId: string) {
     setLoadingId(userId);
-    const supabase = createClient();
-    await supabase
-      .from("profiles")
-      .update({ is_approved: false, updated_at: new Date().toISOString() })
-      .eq("id", userId);
-    router.refresh();
+    await revokeUser(userId);
     setLoadingId(null);
   }
 
-  async function handleToggleAdmin(userId: string, currentRole: string) {
+  async function handleToggleAdmin(userId: string) {
     setLoadingId(userId);
-    const supabase = createClient();
-    const newRole = currentRole === "admin" ? "user" : "admin";
-    await supabase
-      .from("profiles")
-      .update({ role: newRole, updated_at: new Date().toISOString() })
-      .eq("id", userId);
-    router.refresh();
+    await toggleUserRole(userId);
     setLoadingId(null);
   }
 
@@ -115,9 +99,6 @@ export function AdminUserTable({ users, currentUserId }: AdminUserTableProps) {
                   Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Joined
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Actions
                 </th>
               </tr>
@@ -187,22 +168,15 @@ export function AdminUserTable({ users, currentUserId }: AdminUserTableProps) {
                         {u.is_approved ? "Approved" : "Pending"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {new Date(u.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
                         {!isCurrentUser && (
                           <>
                             {u.is_approved ? (
                               <Button
+                                size="xs"
                                 variant="light"
                                 color="red"
-                                size="xs"
                                 loading={isLoading}
                                 onClick={() => handleRevoke(u.id)}
                                 leftSection={<XCircle className="h-3 w-3" />}
@@ -211,9 +185,9 @@ export function AdminUserTable({ users, currentUserId }: AdminUserTableProps) {
                               </Button>
                             ) : (
                               <Button
+                                size="xs"
                                 variant="light"
                                 color="green"
-                                size="xs"
                                 loading={isLoading}
                                 onClick={() => handleApprove(u.id)}
                                 leftSection={
@@ -223,25 +197,24 @@ export function AdminUserTable({ users, currentUserId }: AdminUserTableProps) {
                                 Approve
                               </Button>
                             )}
+
                             <Button
-                              variant="subtle"
-                              color={u.role === "admin" ? "red" : "blue"}
                               size="xs"
+                              variant="subtle"
+                              color="gray"
                               loading={isLoading}
-                              onClick={() =>
-                                handleToggleAdmin(u.id, u.role)
-                              }
-                              leftSection={
-                                u.role === "admin" ? (
-                                  <ShieldOff className="h-3 w-3" />
-                                ) : (
-                                  <Shield className="h-3 w-3" />
-                                )
+                              onClick={() => handleToggleAdmin(u.id)}
+                              title={
+                                u.role === "admin"
+                                  ? "Remove Admin"
+                                  : "Make Admin"
                               }
                             >
-                              {u.role === "admin"
-                                ? "Remove Admin"
-                                : "Make Admin"}
+                              {u.role === "admin" ? (
+                                <ShieldOff className="h-4 w-4" />
+                              ) : (
+                                <Shield className="h-4 w-4" />
+                              )}
                             </Button>
                           </>
                         )}
@@ -250,16 +223,6 @@ export function AdminUserTable({ users, currentUserId }: AdminUserTableProps) {
                   </tr>
                 );
               })}
-              {filteredUsers.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-12 text-center text-sm text-muted-foreground"
-                  >
-                    No users found matching your search.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>

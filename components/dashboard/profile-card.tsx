@@ -1,11 +1,10 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
 import { useState } from "react";
 import { Avatar, TextInput, Button, Badge, Alert } from "@mantine/core";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { updateProfile } from "@/lib/profile/actions";
 
 interface Profile {
   id: string;
@@ -14,13 +13,11 @@ interface Profile {
   avatar_url: string | null;
   role: string;
   is_approved: boolean;
-  provider: string | null;
   created_at: string;
-  updated_at: string;
 }
 
 interface ProfileCardProps {
-  user: User;
+  user: any; // NextAuth User
   profile: Profile;
 }
 
@@ -34,18 +31,14 @@ export function ProfileCard({ user, profile }: ProfileCardProps) {
     setLoading(true);
     setMessage(null);
 
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: fullName, updated_at: new Date().toISOString() })
-      .eq("id", user.id);
-
-    if (error) {
-      setMessage({ type: "error", text: error.message });
-    } else {
+    try {
+      await updateProfile(fullName);
       setMessage({ type: "success", text: "Profile updated successfully." });
       router.refresh();
+    } catch (error: any) {
+      setMessage({ type: "error", text: error.message || "Failed to update profile" });
     }
+    
     setLoading(false);
   }
 
@@ -140,16 +133,6 @@ export function ProfileCard({ user, profile }: ProfileCardProps) {
             classNames={{
               label: "text-foreground text-sm font-medium mb-1",
               input: "bg-background border-border text-foreground",
-            }}
-          />
-          <TextInput
-            label="Provider"
-            value={profile.provider || "email"}
-            disabled
-            size="md"
-            classNames={{
-              label: "text-foreground text-sm font-medium mb-1",
-              input: "bg-muted border-border text-muted-foreground",
             }}
           />
           <TextInput
