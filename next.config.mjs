@@ -11,6 +11,15 @@ const nextConfig = {
       },
     ],
   },
+  // Polyfill __dirname for Edge Runtime (required by next-auth v5 beta internals)
+  webpack: (config, { nextRuntime, webpack }) => {
+    if (nextRuntime === 'edge') {
+      config.plugins.push(
+        new webpack.DefinePlugin({ __dirname: JSON.stringify('/') })
+      );
+    }
+    return config;
+  },
 }
 
 export default nextConfig
